@@ -2,7 +2,7 @@
 m([eclipse, atom, euler, waring, jack, jimmy, chad]).
 f([java, ruby, curie, sql, jill]).
 family([eclipse, java, [ruby]]).
-family([ruby, atom, [curie, waring]).
+family([ruby, atom, [curie, waring]]).
 family([euler, curie, [jill, jack]]).
 family([waring, sql, [jimmy, chad]]).
 %Rules
@@ -30,9 +30,11 @@ grandParent(GrandParent, GrandChild) :- grandFather(GrandParent, GrandChild);
 greatGrandParent(GreatGrandParent, GreatGrandChild) :- grandParent(GreatGrandParent, Parent),
                                                        parent(Parent, GreatGrandChild).
 
-siblings1(SiblingX, SiblingY) :- parent(Parent, SiblingX), parent(Parent, SiblingY).
+siblings1(SiblingX, SiblingY) :- parent(Parent, SiblingX), parent(Parent, SiblingY),
+                                 SiblingX \== SiblingY.
 siblings2(SiblingX, SiblingY) :- father(Father, SiblingX), father(Father, SiblingY),
-                                 mother(Mother, SiblingX), mother(Mother, SiblingY).
+                                 mother(Mother, SiblingX), mother(Mother, SiblingY),
+                                 SiblingX \== SiblingY.
 
 aunt(Aunt, Person) :- parent(Parent, Person),
                       siblings1(Parent, Aunt),
@@ -40,7 +42,7 @@ aunt(Aunt, Person) :- parent(Parent, Person),
 
 uncle(Uncle, Person) :- parent(Parent, Person),
                         siblings1(Parent, Uncle),
-                        male(Aunt).
+                        male(Uncle).
 
 cousins(CousinX, CousinY) :- parent(ParentX, CousinX),
                              parent(ParentY, CousinY),
