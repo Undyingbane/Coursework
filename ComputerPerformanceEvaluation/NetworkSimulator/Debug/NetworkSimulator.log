@@ -1,0 +1,10 @@
+﻿  Timer.cpp
+  ServerSimulation.cpp
+c:\users\richard\source\repos\networksimulator\networksimulator\serversimulation.cpp(213): warning C4129: 'R': unrecognized character escape sequence
+  ServerFunctions.cpp
+  RandomNumbers.cpp
+  Driver.cpp
+c:\users\richard\source\repos\networksimulator\networksimulator\serversimulation.cpp(213): warning C4129: 'R': unrecognized character escape sequence
+  AbandonedService.cpp
+  Generating Code...
+  NetworkSimulator.vcxproj -> C:\Users\Richard\source\repos\NetworkSimulator\Debug\NetworkSimulator.exe
