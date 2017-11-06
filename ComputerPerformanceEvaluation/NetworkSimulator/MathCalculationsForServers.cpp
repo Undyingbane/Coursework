@@ -5,7 +5,7 @@ using namespace std;
 
 static char *serviceType, *arrivalType;
 static double serviceMean, arrivalMean;
-static double utilization, serviceVariation, arrivalVariation, responseTime, jobs;
+static double utilization, serviceVariation, arrivalVariation, responseTime, jobs, wait;
 
 
 
@@ -13,18 +13,19 @@ static double utilization, serviceVariation, arrivalVariation, responseTime, job
 *findVariation 
 *finds variation for types present
 ============================================*/
-static double findVariation( char *dataType )
+static double findVariation( char *dataType, double mean, double lowerBound, double upperBound )
 {
 	if (dataType == "constant") return 0;
 	else if (dataType == "uniform")
 	{
-		return 1.0/12.0 * 1	;
+		//return (upperBound - lowerBound) / ((pow(3, .5) * (upperBound + lowerBound)));
+		return 1.0 / 12.0 * pow(upperBound - lowerBound, 2);
 	}
 
 	else if (dataType == "exponential")
 	{
-		double lambda = 2;
-		return 1 / ( lambda * lambda );
+		return 1;
+		//return mean*mean;
 	}
 
 	return 0;
@@ -48,12 +49,15 @@ static double findUtilization( double avgServiceTime, double avgInterarrivalTime
 ============================================*/
 static double findResponseTime( double avgService, double variationService, double utilization, double variationArrival)
 {
+	/*
 	static double outside = avgService / (1.0 - utilization);
 	static double numerator = (variationService * variationService + 1.0) * (variationArrival * variationArrival - 1.0);
 	static double denominator = (utilization * utilization * variationService * variationService + 1.0);
-	static double inside = 1.0 - utilization * (1.0 - variationService * variationService - numerator / denominator) / 2.0;
-	responseTime = inside * outside;
+	static double inside = 1.0 - utilization / 2.0 * (1.0 - variationService * variationService - numerator / denominator);
+	responseTime = inside*outside;
 	return responseTime;
+	*/
+
 }
 
 /*=========================================
@@ -65,21 +69,32 @@ static double findJobs( double utilization )
 	return jobs;
 }
 
+/*=========================================
+*findWait
+=========================================*/
+static double findWait()
+{
+    wait = utilization / (1 - utilization) * (pow(serviceVariation, 2) + pow(arrivalVariation, 2)) / 2 * serviceMean;
+	return wait;
+}
+
 /*============================================
 *findCalculations
 *finds all items 
 ===========================================*/
-static void findCalculations(char *inArrivalType, double inArrivalMean, char *inServiceType, double inServiceMean )
+static void findCalculations(char *inArrivalType, double inArrivalMean, char *inServiceType, double inServiceMean, double arrivalLowerBound, double arrivalUpperBound, double serviceLowerBound, double serviceUpperBound )
 {
 	serviceType = inServiceType;
 	serviceMean = inServiceMean;
 	arrivalType = inArrivalType;
 	arrivalMean = inArrivalMean;
 	
-	serviceVariation = findVariation( serviceType );
-	arrivalVariation = findVariation( arrivalType );
+	
+	arrivalVariation = findVariation( arrivalType, arrivalMean, arrivalLowerBound, arrivalUpperBound);
+	serviceVariation = findVariation(serviceType, serviceMean, serviceLowerBound, serviceUpperBound);
 	findUtilization(serviceMean, arrivalMean);
-	findResponseTime(serviceMean, serviceVariation, utilization, arrivalVariation);
+	responseTime = serviceMean + findWait();
+	//findResponseTime(serviceMean, serviceVariation, utilization, arrivalVariation);
 	findJobs(utilization);
 }
 
@@ -90,11 +105,22 @@ static void findCalculations(char *inArrivalType, double inArrivalMean, char *in
 =========================================*/
 static void printResults()
 {
-	cout << setw(20) << setprecision(5) << setfill(' ')
-		<< "\Results: \tAverage \t Deviation\n"
-		<< "Interarrival:\t| " << arrivalMean << "\t|" << arrivalVariation << "\n"
-		<< "Response:\t| " << responseTime << "\t|" << "" << "\n"
-		<< "Service:\t| " << serviceMean << "\t|" << serviceVariation << "\n"
-		<< "Queue:\t\t| " << jobs << "\t|" << "" << "\n"
-		<< "Utilization:\t| " << utilization << "\t|" << "" << "\n\n\n";
+	cout << "Calculated:\n";
+	cout << setw(29) << setprecision(5) << setfill(' ') << "Average";
+	cout << setw(15) << setprecision(5) << setfill(' ') << "Variance\n";
+	cout << "Interarrival: ";
+	cout << setw(15) << setprecision(5) << setfill(' ') << arrivalMean;
+	cout << setw(15) << setprecision(5) << setfill(' ') << arrivalVariation << "\n";
+	cout << "Service:      ";
+	cout << setw(15) << setprecision(5) << setfill(' ') << serviceMean;
+	cout << setw(15) << setprecision(5) << setfill(' ') << serviceVariation << "\n";
+	cout << "Response:     ";
+	cout << setw(15) << setprecision(5) << setfill(' ') << responseTime;
+	cout << setw(15) << setprecision(5) << setfill(' ') << "" << "\n";
+	cout << "Wait Time:    ";
+	cout << setw(15) << setprecision(5) << setfill(' ') << wait;
+	cout << setw(15) << setprecision(5) << setfill(' ') << "\n";
+	cout << "Utilization:  ";
+	cout << setw(15) << setprecision(5) << setfill(' ') << utilization;
+	cout << setw(15) << setprecision(5) << setfill(' ') << "" << "\n\n\n";
 }

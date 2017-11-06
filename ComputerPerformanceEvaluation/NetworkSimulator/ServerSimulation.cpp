@@ -6,7 +6,7 @@
 using namespace std;
 
 //Number of items to process
-static const int TOTAL_NUMBER_SERVICES = 100;
+static const int TOTAL_NUMBER_SERVICES = 100000;
 
 class SimulateServer
 {
@@ -23,25 +23,25 @@ private:
 	double serverUtilizationArr[TOTAL_NUMBER_SERVICES];
 
 	//Std dev
-	double devService, devInterarrival, devResponse, devQueue, devUtilization;
+	double varService, varInterarrival, varResponse, varQueue, varUtilization, varWaitTime;
 
 	
 	
 	//values needed for results
 
 	//TOTALS
-	double totalInterarrivalTime, totalServiceTime, totalResponseTime = 0, serverUtilizationFactor = 0, queueFactor = 0;
+	double totalInterarrivalTime = 0, totalServiceTime = 0, totalResponseTime = 0, serverUtilizationFactor = 0, queueFactor = 0;
 
 	//AVERAGES
-	double avgInterarrivalTime, avgServiceTime, avgResponseTime, avgUtilization, avgQueue;
+	double avgInterarrivalTime, avgServiceTime, avgResponseTime, avgUtilization, avgQueue, avgWaitTime;
 
 	//RESULTS
 	double timeToNextArrival, currentServiceRemaining;
 	double nextArrivalTime;
 
 	//Pointers to functions
-	double (*arrivalGeneration)(double);
-	double(*serviceGeneration)(double);
+	double (*arrivalGeneration)(double value);
+	double(*serviceGeneration)(double value);
 
 	//Counter for trials
 	int serviceCounter = 0;
@@ -73,8 +73,8 @@ private:
 		timeToNextArrival = arrivalGeneration(arrivalMean); 
 		nextArrivalTime = totalTime + timeToNextArrival;
 		totalInterarrivalTime += timeToNextArrival;			//TOTAL Interarrival time for all arrival times generated
-
-		interArrivalTimeArr[arrivalCounter ] = timeToNextArrival;
+		arrivalCounter++;
+		interArrivalTimeArr[arrivalCounter - 1] = timeToNextArrival;
 	}
 
 	void getNextService() //GENERATE NEXT SERVICE
@@ -90,7 +90,6 @@ private:
 	{
 		queueArr[serviceCounter - 1] = simulatorQueue.size();
 		simulatorQueue.push(nextArrivalTime );
-		arrivalCounter++;
 		getNextArrival();
 	}
 
@@ -105,12 +104,13 @@ private:
 	void completeService()
 	{
 		//CHECK THIS LATER
-		totalResponseTime += totalTime - simulatorQueue.front() + serviceTimeArr[serviceCounter - 1]; //Response time is found as dif between arrival and working on
-		responseTimeArr[serviceCounter - 1] = totalTime - simulatorQueue.front() + serviceTimeArr[serviceCounter - 1];
+		totalTime += currentServiceRemaining; //THIS MUCH TIME PASSED
+		totalResponseTime += totalTime - simulatorQueue.front(); //Response time is found as dif between arrival and working on
+		responseTimeArr[serviceCounter - 1] = totalTime - simulatorQueue.front();
 		simulatorQueue.pop();
 
 		timeToNextArrival = timeToNextArrival - currentServiceRemaining;  //find time to next arrival
-		totalTime += currentServiceRemaining; //THIS MUCH TIME PASSED
+		
 		queueFactor += (double)( simulatorQueue.size() ) * currentServiceRemaining; //every time passes need to do this
 	}
 
@@ -132,17 +132,18 @@ private:
 	{
 		avgInterarrivalTime = totalInterarrivalTime / arrivalCounter;
 		avgServiceTime = totalServiceTime / serviceCounter;
-		avgResponseTime = totalResponseTime / totalTime;
+		avgResponseTime = totalResponseTime / serviceCounter;
 		avgUtilization =  avgServiceTime / avgInterarrivalTime;
-		avgQueue = queueFactor / totalTime;
+		avgQueue = queueFactor / serviceCounter;
+		avgWaitTime = avgQueue * avgServiceTime;
 	}
 
-	double findDeviation( double *item)
+	double findVariance( double *item)
 	{
 		double tempArr[TOTAL_NUMBER_SERVICES];
 		double tempSum = 0;
 		double tempMean;
-		double sumSquareDifference;
+		double sumSquareDifference = 0;
 		for (int i = 0; i < TOTAL_NUMBER_SERVICES; i++)
 		{
 			tempArr[i] = item[i];
@@ -152,22 +153,23 @@ private:
 
 		for (int i = 0; i < TOTAL_NUMBER_SERVICES; i++)
 		{
-			sumSquareDifference = (tempArr[i] - tempMean) * (tempArr[i] - tempMean);
+			sumSquareDifference += (tempArr[i] - tempMean) * (tempArr[i] - tempMean);
 		}
 		return sumSquareDifference / (TOTAL_NUMBER_SERVICES - 1);
+		//return pow( (sumSquareDifference / (TOTAL_NUMBER_SERVICES - 1)), .5);
 	}
 
-	void calculateDeviations()
+	void calculateVariance()
 	{
 		for (int i = 0; i < TOTAL_NUMBER_SERVICES; i++)
 		{
 			serverUtilizationArr[i] = serviceTimeArr[i] / interArrivalTimeArr[i];
 		}
-		devInterarrival = findDeviation(interArrivalTimeArr);
-		devService = findDeviation(serviceTimeArr);
-		devResponse = findDeviation(responseTimeArr);
-		devQueue = findDeviation(queueArr);
-		devUtilization = findDeviation(serverUtilizationArr);
+		varUtilization = findVariance(serverUtilizationArr);
+		varInterarrival = findVariance(interArrivalTimeArr);
+		varService = findVariance(serviceTimeArr);
+		varResponse = findVariance(responseTimeArr);
+		varQueue = findVariance(queueArr);
 	}
 	
 public:
@@ -202,20 +204,35 @@ public:
 			if (simulatorQueue.empty())  waitForArrival();
 			service();
 		}
-		
+
 		generateAverages();
-		calculateDeviations();
+		calculateVariance();
 		printResults();
 	}
 
 	void printResults()
 	{
-		cout << setw(20) << setprecision(5) << setfill(' ')
-			<< "\Results: \tAverage \t Deviation\n"
-			<< "Interarrival:\t| " << avgInterarrivalTime << "\t|" << devInterarrival << "\n"
-			<< "Response:\t| " << avgResponseTime << "\t|" << devResponse << "\n"
-			<< "Service:\t| " << avgServiceTime << "\t|" << devService << "\n"
-			<< "Queue:\t\t| " << avgQueue << "\t|" << devService << "\n"
-			<< "Utilization:\t| " << avgUtilization << "\t|" << devUtilization << "\n\n\n";
+		cout << "Results:\n";
+		cout << setw(29) << setprecision(5) << setfill(' ') << "Average";
+		cout << setw(15) << setprecision(5) << setfill(' ') << "Variance\n";
+		cout << "Interarrival: ";
+		cout << setw(15) << setprecision(5) << setfill(' ') << avgInterarrivalTime;
+		cout << setw(15) << setprecision(5) << setfill(' ') << varInterarrival << "\n";
+		cout << "Service:      ";
+		cout << setw(15) << setprecision(5) << setfill(' ') << avgServiceTime;
+		cout << setw(15) << setprecision(5) << setfill(' ') << varService << "\n";
+		cout << "Response:     ";
+		cout << setw(15) << setprecision(5) << setfill(' ') << avgResponseTime;
+		cout << setw(15) << setprecision(5) << setfill(' ') << varResponse << "\n";
+		cout << "Queue Length: ";
+		cout << setw(15) << setprecision(5) << setfill(' ') << avgQueue;
+		cout << setw(15) << setprecision(5) << setfill(' ') << varQueue << "\n";
+		cout << "Wait Time:    ";
+		cout << setw(15) << setprecision(5) << setfill(' ') << avgWaitTime;
+		cout << setw(15) << setprecision(5) << setfill(' ') << "" << "\n";
+		cout << "Utilization:  ";
+		cout << setw(15) << setprecision(5) << setfill(' ') << avgUtilization;
+		cout << setw(15) << setprecision(5) << setfill(' ') << varUtilization << "\n\n\n";
+		
 	}
 };
