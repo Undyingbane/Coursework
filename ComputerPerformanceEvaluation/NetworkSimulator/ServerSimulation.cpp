@@ -104,8 +104,9 @@ private:
 
 	void completeService()
 	{
-		totalResponseTime += totalTime - simulatorQueue.front(); //Response time is found as dif between arrival and working on
-		responseTimeArr[serviceCounter - 1] = totalTime - simulatorQueue.front();
+		//CHECK THIS LATER
+		totalResponseTime += totalTime - simulatorQueue.front() + serviceTimeArr[serviceCounter - 1]; //Response time is found as dif between arrival and working on
+		responseTimeArr[serviceCounter - 1] = totalTime - simulatorQueue.front() + serviceTimeArr[serviceCounter - 1];
 		simulatorQueue.pop();
 
 		timeToNextArrival = timeToNextArrival - currentServiceRemaining;  //find time to next arrival

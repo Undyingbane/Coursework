@@ -113,6 +113,7 @@
   <ItemGroup>
     <ClCompile Include="AbandonedService.cpp" />
     <ClCompile Include="Driver.cpp" />
+    <ClCompile Include="MathCalculationsForServers.cpp" />
     <ClCompile Include="RandomNumbers.cpp" />
     <ClCompile Include="ServerFunctions.cpp" />
     <ClCompile Include="ServerSimulation.cpp" />
